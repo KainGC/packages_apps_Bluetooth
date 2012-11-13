@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2008-2009, Motorola, Inc.
+ * Copyright (c) 2010-2012, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,25 +29,23 @@
 
 package com.android.bluetooth.map;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.net.Uri;
 import android.os.Handler;
-import android.os.Message;
-import android.os.PowerManager;
-import android.os.Process;
 import android.util.Log;
 
-import javax.obex.*;
-
 import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.FileInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
-import org.apache.http.Header;
+import javax.obex.ApplicationParameter;
+import javax.obex.ClientOperation;
+import javax.obex.ClientSession;
+import javax.obex.HeaderSet;
+import javax.obex.ObexTransport;
+import javax.obex.ResponseCodes;
+
 /**
  * This class runs as an OBEX client
  */
@@ -66,10 +65,7 @@ public class BluetoothMnsObexSession {
 
     private Context mContext;
 
-
     private volatile boolean mWaitingForRemote;
-
-    private Handler mCallback;
 
     private static final String TYPE_EVENT = "x-bt/MAP-event-report";
 
@@ -81,17 +77,20 @@ public class BluetoothMnsObexSession {
         mTransport = transport;
     }
 
-
     private ClientSession mCs;
 
-
     private boolean mConnected = false;
+
+    public boolean isConnected() {
+        return mConnected;
+    }
 
     public void disconnect() {
         try {
             if (mCs != null) {
                 mCs.disconnect(null);
             }
+<<<<<<< HEAD
                 mCs = null;
                 if (D) Log.d(TAG, "OBEX session disconnected");
             } catch (IOException e) {
@@ -111,8 +110,28 @@ public class BluetoothMnsObexSession {
                     mTransport.close();
             } catch (IOException e) {
                     Log.e(TAG, "mTransport.close error");
+=======
+            mCs = null;
+            if (D) Log.d(TAG, "OBEX session disconnected");
+        } catch (IOException e) {
+            Log.w(TAG, "OBEX session disconnect error " + e.getMessage());
+        }
+        try {
+            if (mCs != null) {
+                if (D) Log.d(TAG, "OBEX session close mCs");
+                mCs.close();
+                if (D) Log.d(TAG, "OBEX session closed");
             }
-
+        } catch (IOException e) {
+            Log.w(TAG, "OBEX session close error" + e.getMessage());
+        }
+        try {
+            if (mTransport != null) {
+                mTransport.close();
+>>>>>>> a130f0e... Bluetooth MAP (Message Access Profile) Upstream Changes (1/3)
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "mTransport.close error " + e.getMessage());
         }
     }
 
@@ -124,9 +143,13 @@ public class BluetoothMnsObexSession {
             mCs = new ClientSession(mTransport);
             mConnected = true;
         } catch (IOException e1) {
+<<<<<<< HEAD
             Log.e(TAG, "OBEX session create error");
+=======
+            Log.e(TAG, "OBEX session create error " + e1.getMessage());
+>>>>>>> a130f0e... Bluetooth MAP (Message Access Profile) Upstream Changes (1/3)
         }
-        if (mConnected) {
+        if (mConnected && mCs != null) {
             mConnected = false;
             HeaderSet hs = new HeaderSet();
             // bb582b41-420c-11db-b0de-0800200c9a66
@@ -144,7 +167,11 @@ public class BluetoothMnsObexSession {
                 if (D) Log.d(TAG, "OBEX session created");
                 mConnected = true;
             } catch (IOException e) {
+<<<<<<< HEAD
                 Log.e(TAG, "OBEX session connect error");
+=======
+                Log.e(TAG, "OBEX session connect error " + e.getMessage());
+>>>>>>> a130f0e... Bluetooth MAP (Message Access Profile) Upstream Changes (1/3)
             }
         }
             synchronized (this) {
@@ -172,7 +199,7 @@ public class BluetoothMnsObexSession {
 
         ClientOperation putOperation = null;
         OutputStream outputStream = null;
-        InputStream inputStream = null;
+        FileInputStream fileInputStream = null;
         try {
             synchronized (this) {
             mWaitingForRemote = true;
@@ -183,6 +210,7 @@ public class BluetoothMnsObexSession {
                 putOperation = (ClientOperation)mCs.put(request);
                 // TODO - Should this be kept or Removed
 
+<<<<<<< HEAD
              } catch (IOException e) {
                  Log.e(TAG, "Error when put HeaderSet ");
                  error = true;
@@ -208,17 +236,42 @@ public class BluetoothMnsObexSession {
                  long timestamp = 0;
                  int outputBufferSize = putOperation.getMaxPacketSize();
                  byte[] buffer = new byte[outputBufferSize];
+=======
+            } catch (IOException e) {
+                Log.e(TAG, "Error when put HeaderSet " + e.getMessage());
+                error = true;
+            }
+            synchronized (this) {
+                mWaitingForRemote = false;
+            }
+            if (!error) {
+                try {
+                    if (V) Log.v(TAG, "Send headerset Event ");
+                    outputStream = putOperation.openOutputStream();
+                } catch (IOException e) {
+                    Log.e(TAG, "Error when opening OutputStream " + e.getMessage());
+                    error = true;
+                }
+            }
 
+            if (!error) {
+                int position = 0;
+                int readLength = 0;
+                long timestamp = 0;
+                int outputBufferSize = putOperation.getMaxPacketSize();
+                byte[] buffer = new byte[outputBufferSize];
+>>>>>>> a130f0e... Bluetooth MAP (Message Access Profile) Upstream Changes (1/3)
 
-                FileInputStream fileInputStream = new FileInputStream(file);
+                fileInputStream = new FileInputStream(file);
                 BufferedInputStream a = new BufferedInputStream(fileInputStream, 0x4000);
 
-                while (okToProceed && (position != file.length())) {
+                while ((position != file.length())) {
                     if (V) timestamp = System.currentTimeMillis();
 
                     readLength = a.read(buffer, 0, outputBufferSize);
                     outputStream.write(buffer, 0, readLength);
 
+<<<<<<< HEAD
                     /* check remote abort */
                     responseCode = putOperation.getResponseCode();
                     responseCode = ResponseCodes.OBEX_HTTP_OK;
@@ -241,6 +294,19 @@ public class BluetoothMnsObexSession {
                  Log.i(TAG, "SendFile finished send out file " + file.length()
                             + " length " + file.length());
                 outputStream.close();
+=======
+                    position += readLength;
+                    if (V) {
+                        Log.v(TAG, "Sending file position = " + position
+                                + " readLength " + readLength + " bytes took "
+                                + (System.currentTimeMillis() - timestamp) + " ms");
+                    }
+                }
+                if (position == file.length()) {
+                    Log.i(TAG, "SendFile finished send out file " + file.length()
+                            + " length " + file.length());
+                    outputStream.close();
+>>>>>>> a130f0e... Bluetooth MAP (Message Access Profile) Upstream Changes (1/3)
                 } else {
                     error = true;
                     // TBD - Is Output stream close needed here
@@ -251,11 +317,18 @@ public class BluetoothMnsObexSession {
             }
         } catch (IOException e) {
             handleSendException(e.toString());
-        } catch (NullPointerException e) {
-            handleSendException(e.toString());
+            error = true;
         } catch (IndexOutOfBoundsException e) {
             handleSendException(e.toString());
+            error = true;
         } finally {
+            if (fileInputStream != null) {
+                try {
+                    fileInputStream.close();
+                } catch (IOException ei) {
+                    Log.e(TAG, "Error while closing stream"+ ei.toString());
+                }
+            }
             try {
                 if (!error) {
                     responseCode = putOperation.getResponseCode();
@@ -266,14 +339,15 @@ public class BluetoothMnsObexSession {
                         }
                     }
                 }
-                if (inputStream != null) {
-                    inputStream.close();
-                }
                 if (putOperation != null) {
                    putOperation.close();
                 }
             } catch (IOException e) {
+<<<<<<< HEAD
                 Log.e(TAG, "Error when closing stream after send");
+=======
+                Log.e(TAG, "Error when closing stream after send " + e.getMessage());
+>>>>>>> a130f0e... Bluetooth MAP (Message Access Profile) Upstream Changes (1/3)
             }
         }
 
